@@ -18,7 +18,8 @@ vk_bot = ResultVKClientGroup('client_settings')
 
 @app.route("/")
 def index():
-    return render_template('index.html', running='Running' if vk_bot.client.running() else 'Disabled')
+    return render_template('index.html', running='Running' if vk_bot.client.running() else 'Disabled',
+                           additional=vk_bot.client.settings())
 
 
 @app.route("/start")
