@@ -2,7 +2,8 @@ import argparse
 import os
 
 from flask import Flask, render_template, redirect
-from client_settings import ResultVKClientGroup, ID, TOKEN
+from client_settings.bot import ResultVKClientGroup
+
 
 params = argparse.ArgumentParser()
 params.add_argument('--heroku', action='store_true')
@@ -10,7 +11,7 @@ args = params.parse_args()
 
 app = Flask(__name__)
 
-vk_bot = ResultVKClientGroup(ID, TOKEN)
+vk_bot = ResultVKClientGroup('client_settings')
 
 
 @app.route("/")
@@ -21,7 +22,6 @@ def index():
 @app.route("/start")
 def start():
     vk_bot.start()
-    print('START')
     return redirect("/")
 
 

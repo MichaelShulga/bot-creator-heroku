@@ -4,14 +4,19 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
+from client import Client
 
 
 class VkGroupInitial:
-    def __init__(self, group_id, token):
+    def __init__(self, client_settings_package):
         # initialization
-        self.id = group_id
-        self.token = token
-        self.vk_session = VkApi(token=token)
+        self.client = Client(client_settings_package)
+
+        settings = self.client.settings()
+        self.id = settings["id"]
+        self.token = settings["token"]
+
+        self.vk_session = VkApi(token=self.token)
 
 
 class VkGroupMethods(VkGroupInitial):
@@ -48,13 +53,18 @@ class VkGroupScheduler(VkGroupInitial):
 
 
 class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
-    running = False
+    def __init__(self, client_settings_package):
+        super().__init__(client_settings_package)
+        settings = self.client.settings()
+        self.running = settings["running"]
+        if self.running:
+            self.start()
 
     def activate_listening(self):
         longpoll = VkBotLongPoll(self.vk_session, self.id)
         for event in longpoll.listen():
-            print(event)
             if not self.running:
+                print('LISTENING OFF')
                 return
             if event.type == VkBotEventType.MESSAGE_NEW:
                 self.if_new_message(message=event.obj.message['text'],
@@ -64,8 +74,10 @@ class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
 
     def start(self):
         self.running = True
+        self.client.set_running(self.running)
+
         # events listener
-        listener = threading.Thread(target=self.activate_listening, name="listener", args=[], daemon=True)
+        listener = threading.Thread(target=self.activate_listening, name="listener", args=[])
         listener.start()
 
         # scheduler
@@ -74,6 +86,8 @@ class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
 
     def shutdown(self):
         self.running = False
+        self.client.set_running(self.running)
+
         self.shutdown_scheduler()
         return True
 
@@ -85,10 +99,3 @@ class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
 
 class VkGroup(VkGroupRunning):
     pass
-
-
-if __name__ == '__main__':
-    ID = '203807582'
-    TOKEN = '21b426f2c33e1a65bbc8807ab67ff4d282e026b4b79e9d4b1e33f20f7a0072e137f4e77216ce578f6432a'
-    vk_group = VkGroup(ID, TOKEN)
-    vk_group.start()
