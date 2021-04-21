@@ -1,3 +1,5 @@
+from gevent import monkey; monkey.patch_all()
+
 import argparse
 import os
 
@@ -16,7 +18,7 @@ vk_bot = ResultVKClientGroup('client_settings')
 
 @app.route("/")
 def index():
-    return render_template('index.html', running='Running' if vk_bot.running else 'Disabled')
+    return render_template('index.html', running='Running' if vk_bot.client.running() else 'Disabled')
 
 
 @app.route("/start")

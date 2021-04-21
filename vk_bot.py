@@ -1,10 +1,11 @@
 import random
-import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from client import Client
+
+import gevent
 
 
 class VkGroupInitial:
@@ -52,20 +53,29 @@ class VkGroupScheduler(VkGroupInitial):
         self.scheduler.resume()
 
 
+class BackgroundFunction:
+    greenlet = None
+
+    def start(self, func):
+        self.greenlet = gevent.spawn(func)
+
+    def shutdown(self):
+        self.greenlet.kill()
+
+
 class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
+    background_listener = BackgroundFunction()
+
     def __init__(self, client_settings_package):
         super().__init__(client_settings_package)
         settings = self.client.settings()
-        self.running = settings["running"]
-        if self.running:
+        running = settings["running"]
+        if running:
             self.start()
 
     def activate_listening(self):
         longpoll = VkBotLongPoll(self.vk_session, self.id)
         for event in longpoll.listen():
-            if not self.running:
-                print('LISTENING OFF')
-                return
             if event.type == VkBotEventType.MESSAGE_NEW:
                 self.if_new_message(message=event.obj.message['text'],
                                     from_id=event.obj.message['from_id'],
@@ -73,21 +83,22 @@ class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
             self.own_handler(event)
 
     def start(self):
-        self.running = True
-        self.client.set_running(self.running)
+        self.client.set_running(True)
 
         # events listener
-        listener = threading.Thread(target=self.activate_listening, name="listener", args=[])
-        listener.start()
+        self.background_listener.start(self.activate_listening)
 
         # scheduler
         self.activate_scheduler()
         return True
 
     def shutdown(self):
-        self.running = False
-        self.client.set_running(self.running)
+        self.client.set_running(False)
 
+        # events listener
+        self.background_listener.shutdown()
+
+        # scheduler
         self.shutdown_scheduler()
         return True
 

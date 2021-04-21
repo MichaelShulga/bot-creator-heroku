@@ -19,6 +19,9 @@ class Client:
         settings['running'] = flag
         self.update_settings(settings)
 
+    def running(self):
+        return self.settings()['running']
+
 
 if __name__ == '__main__':
     client = Client('client_settings')
