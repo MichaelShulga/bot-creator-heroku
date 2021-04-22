@@ -1,11 +1,11 @@
-from gevent import monkey; monkey.patch_all()
-
+from gevent import monkey;monkey.patch_all()
+import requests
+from apscheduler.schedulers.background import BackgroundScheduler
 import argparse
 import os
 
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request
 from client_settings.bot import ResultVKClientGroup
-
 
 params = argparse.ArgumentParser()
 params.add_argument('--heroku', action='store_true')
@@ -15,11 +15,18 @@ app = Flask(__name__)
 
 vk_bot = ResultVKClientGroup('client_settings')
 
+scheduler = BackgroundScheduler()
+
 
 @app.route("/")
 def index():
+    alive_start, alive_stop = '', ''
+    if scheduler.state == 1:  # keep alive scheduler is running
+        alive_start = 'disabled'
+    else:
+        alive_stop = 'disabled'
     return render_template('index.html', running='Running' if vk_bot.client.running() else 'Disabled',
-                           additional=vk_bot.client.settings())
+                           additional=vk_bot.client.settings(), alive_start=alive_start, alive_stop=alive_stop)
 
 
 @app.route("/start")
@@ -31,6 +38,8 @@ def start():
 @app.route("/shutdown")
 def stop():
     vk_bot.shutdown()
+    url = f'{request.host_url}/stay_alive_heroku/0'
+    requests.get(url)
     return redirect("/")
 
 
@@ -40,9 +49,27 @@ def restart():
     return redirect("/")
 
 
-@app.route("/vk")
-def vk():
-    return redirect("http://www.vk.com")
+@app.route("/none")
+def none():
+    return ''
+
+
+@app.route("/stay_alive_heroku/<int:flag>")
+def stay_alive_heroku(flag):
+    if flag:
+        url = f'{request.host_url}/none'
+        if scheduler.state == 0:  # not started
+            scheduler.add_job(lambda: requests.get(url), 'interval', minutes=14)
+            scheduler.start()
+            return redirect("/")
+        elif scheduler.state == 2:  # paused
+            scheduler.resume()
+            return redirect("/")
+    else:
+        if scheduler.state == 1:  # running
+            scheduler.pause()
+            return redirect("/")
+    return "Something went wrong"
 
 
 def main():

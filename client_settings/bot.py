@@ -23,8 +23,9 @@ class OwnFunctions(VkGroup):
 class SchedulerSettings(OwnFunctions):
     def activate_scheduler(self):
         self.scheduler.add_job(self.send_date_to_me, 'interval', days=1, start_date='2021-04-21 07:30:00')
-        self.scheduler.start()
+        # self.scheduler.add_job(self.send_date_to_me, 'interval', seconds=6, start_date='2021-04-21 07:30:00')
 
 
 class ResultVKClientGroup(EventsHandler, SchedulerSettings):
     pass
+

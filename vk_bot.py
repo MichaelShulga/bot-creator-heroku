@@ -1,11 +1,12 @@
 import random
 
-from apscheduler.schedulers.background import BackgroundScheduler
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from client import Client
 
 import gevent
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 class VkGroupInitial:
@@ -36,23 +37,6 @@ class VkGroupEventsHandler(VkGroupInitial):
         pass
 
 
-class VkGroupScheduler(VkGroupInitial):
-    scheduler = BackgroundScheduler()
-
-    def activate_scheduler(self):
-        pass
-
-    def shutdown_scheduler(self):
-        self.scheduler.shutdown()
-        self.scheduler = BackgroundScheduler()
-
-    def pause_scheduler(self):
-        self.scheduler.pause()
-
-    def resume_scheduler(self):
-        self.scheduler.resume()
-
-
 class BackgroundFunction:
     greenlet = None
 
@@ -63,8 +47,9 @@ class BackgroundFunction:
         self.greenlet.kill()
 
 
-class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
-    background_listener = BackgroundFunction()
+class VkGroupRunning(VkGroupMethods, VkGroupEventsHandler):
+    listener = BackgroundFunction()
+    scheduler = BackgroundScheduler()
 
     def __init__(self, client_settings_package):
         super().__init__(client_settings_package)
@@ -82,24 +67,29 @@ class VkGroupRunning(VkGroupMethods, VkGroupScheduler, VkGroupEventsHandler):
                                     event=event)
             self.own_handler(event)
 
+    def activate_scheduler(self):
+        pass
+
     def start(self):
         self.client.set_running(True)
 
         # events listener
-        self.background_listener.start(self.activate_listening)
+        self.listener.start(self.activate_listening)
 
         # scheduler
         self.activate_scheduler()
+        self.scheduler.start()
         return True
 
     def shutdown(self):
         self.client.set_running(False)
 
         # events listener
-        self.background_listener.shutdown()
+        self.listener.shutdown()
 
         # scheduler
-        self.shutdown_scheduler()
+        self.scheduler.shutdown()
+        self.scheduler = BackgroundScheduler()
         return True
 
     def restart(self):

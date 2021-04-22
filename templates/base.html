@@ -11,16 +11,18 @@
 <body>
 <header>
     <nav class="navbar navbar-light bg-light">
-        <a class="navbar-brand" href="#">Bot</a>
-        <a class="navbar-brand" href="/">{{ running }}</a>
+        <a class="navbar-brand" href="/">Bot</a>
 
         {% if running == 'Running' %}
+            <p class="text-success h1">{{ running }}</p>
             <p>
+                <a class="btn btn-warning {{ alive_start }}" href="/stay_alive_heroku/1">Start keeping alive</a>
+                <a class="btn btn-info {{ alive_stop }}" href="/stay_alive_heroku/0">Stop keeping alive</a>
                 <a class="btn btn-success disabled" href="/start">Start</a>
                 <a class="btn btn-danger" href="/shutdown">Shutdown</a>
                 <a class="btn btn-primary" href="/restart">Restart</a>
-            </p>
         {% else %}
+            <p class="text-danger h1">{{ running }}</p>
             <p>
                 <a class="btn btn-success" href="/start">Start</a>
                 <a class="btn btn-danger disabled" href="/shutdown">Shutdown</a>
