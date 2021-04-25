@@ -1,6 +1,7 @@
 import random
 
-from vk_api import VkApi
+import vk_api
+from vk_api.vk_api import VkApiGroup
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from client import Client
 
@@ -18,7 +19,7 @@ class VkGroupInitial:
         self.id = settings["id"]
         self.token = settings["token"]
 
-        self.vk_session = VkApi(token=self.token)
+        self.vk_session = VkApiGroup(token=self.token)
 
 
 class VkGroupMethods(VkGroupInitial):
@@ -28,9 +29,22 @@ class VkGroupMethods(VkGroupInitial):
                          message=message,
                          random_id=random.randint(0, 2 ** 64))
 
+    def wall_post(self, message):
+        vk = self.vk_session.get_api()
+        vk.wall.post(message=message, owner_id=f"-{self.id}")
+
 
 class VkGroupEventsHandler(VkGroupInitial):
-    def if_new_message(self, message, from_id, event):
+    def message_new(self, message, from_id, event):
+        pass
+
+    def group_join(self, from_id, event):
+        pass
+
+    def message_typing_state(self, from_id, event):
+        pass
+
+    def group_leave(self, from_id, event):
         pass
 
     def own_handler(self, event):
@@ -61,20 +75,38 @@ class VkGroupRunning(VkGroupMethods, VkGroupEventsHandler):
     def activate_listening(self):
         longpoll = VkBotLongPoll(self.vk_session, self.id)
         for event in longpoll.listen():
+            print(event)
             if event.type == VkBotEventType.MESSAGE_NEW:
-                self.if_new_message(message=event.obj.message['text'],
-                                    from_id=event.obj.message['from_id'],
-                                    event=event)
+                self.message_new(message=event.obj.message['text'],
+                                 from_id=event.obj.message['from_id'],
+                                 event=event)
+            if event.type == VkBotEventType.MESSAGE_TYPING_STATE:
+                self.message_typing_state(from_id=event.obj.from_id,
+                                          event=event)
+            if event.type == VkBotEventType.GROUP_JOIN:
+                self.group_join(from_id=event.obj.user_id,
+                                event=event)
+            if event.type == VkBotEventType.GROUP_LEAVE:
+                self.group_leave(from_id=event.obj.user_id,
+                                 event=event)
             self.own_handler(event)
+
+    def activate_listening_ignore_errors(self):
+        try:
+            self.activate_listening()
+        except Exception as e:
+            self.client.add_error(str(e))
+            self.activate_listening_ignore_errors()
 
     def activate_scheduler(self):
         pass
 
     def start(self):
         self.client.set_running(True)
+        self.client.clean_errors()
 
         # events listener
-        self.listener.start(self.activate_listening)
+        self.listener.start(self.activate_listening_ignore_errors)
 
         # scheduler
         self.activate_scheduler()

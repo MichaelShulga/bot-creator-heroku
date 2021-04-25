@@ -22,6 +22,16 @@ class Client:
     def running(self):
         return self.settings()['running']
 
+    def add_error(self, error):
+        settings = self.settings()
+        settings["errors"].append(error)
+        self.update_settings(settings)
+
+    def clean_errors(self):
+        settings = self.settings()
+        settings["errors"] = []
+        self.update_settings(settings)
+
 
 if __name__ == '__main__':
     client = Client('client_settings')
