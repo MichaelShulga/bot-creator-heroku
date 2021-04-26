@@ -25,7 +25,7 @@ class EventsHandler(OwnFunctions):
             self.wall_post(message="Test")
             answer = 'Сделано'
         else:
-            answer = 'Пока'
+            answer = 'Спокойной ночи'
         self.send_message(to_id=from_id, message=answer)
 
     def message_typing_state(self, from_id, event):  # someone typing text
