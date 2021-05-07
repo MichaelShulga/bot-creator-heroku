@@ -25,15 +25,14 @@ class EventsHandler(OwnFunctions):
             self.wall_post(message="Test")
             answer = 'Сделано'
         else:
-            answer = 'Пока'
+            answer = 'Пошел в жопу!'
         self.send_message(to_id=from_id, message=answer)
 
     def message_typing_state(self, from_id, event):  # someone typing text
-        message = 'You are typing some text'
-        self.send_message(to_id=from_id, message=message)
+        pass
 
     def group_join(self, from_id, event):  # new user joined(subscriber)
-        message = 'New subscriber'
+        message = 'Новый подписчик'
         self.send_message(to_id=from_id, message=message)
 
     def group_leave(self, from_id, event):  # user left group
