@@ -20,7 +20,7 @@
     <label for="errors">ERRORS:</label>
     <select multiple class="form-control" id="errors">
         {% for error in client_settings["errors"] %}
-        <option>error</option>
+        <option>{{ error }}</option>
         {% endfor %}
 
     </select>
