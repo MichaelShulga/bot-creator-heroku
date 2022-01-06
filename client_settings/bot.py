@@ -20,7 +20,7 @@ class OwnFunctions(VkGroup):
 class EventsHandler(OwnFunctions):
     def message_new(self, message, from_id, event):  # new message
         if message == 'Привет':
-            answer = 'Привет'
+            answer = 'Hi'
         elif message == 'Сделай пост':
             self.wall_post(message="Test")
             answer = 'Сделано'
